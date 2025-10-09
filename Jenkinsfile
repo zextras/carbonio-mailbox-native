@@ -77,8 +77,7 @@ pipeline {
                         sh """
                             mvn ${MVN_OPTS} -DskipTests \
                                 sonar:sonar \
-                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports \
-                                -Dsonar.exclusions=**/com/zimbra/soap/mail/type/*.java,**/com/zimbra/soap/mail/message/*.java,**/com/zimbra/cs/account/ZAttr*.java,**/com/zimbra/common/account/ZAttr*.java
+                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
                         """
                     }
                 }
