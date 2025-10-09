@@ -63,7 +63,9 @@ pipeline {
                     sh """
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
+                        cp -a target PKGBUILD staging/
                     """
+                    stash includes: 'staging/**', name: 'staging'
                 }
             }
         }
