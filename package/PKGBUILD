@@ -18,11 +18,13 @@ depends__apt=(
 depends__yum=(
   "glibc"
 )
+source=("libnative.so")
+sha256sums=("SKIP")
 section="mail"
 priority="optional"
 
 package() {
-  cd "${srcdir}/.."
-  install -D "target/libnative.so" \
+  cd "${srcdir}"
+  install -D "libnative.so" \
     "${pkgdir}/opt/zextras/lib/libnative.so"
 }

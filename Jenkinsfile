@@ -1,10 +1,10 @@
 library(
-    identifier: 'jenkins-packages-build-library@1.0.4',
-    retriever: modernSCM([
-        $class: 'GitSCMSource',
-        remote: 'git@github.com:zextras/jenkins-packages-build-library.git',
-        credentialsId: 'jenkins-integration-with-github-account'
-    ])
+        identifier: 'jenkins-packages-build-library@1.0.4',
+        retriever: modernSCM([
+                $class       : 'GitSCMSource',
+                remote       : 'git@github.com:zextras/jenkins-packages-build-library.git',
+                credentialsId: 'jenkins-integration-with-github-account'
+        ])
 )
 
 boolean isBuildingTag() {
@@ -35,8 +35,8 @@ pipeline {
 
     parameters {
         booleanParam defaultValue: false,
-            description: 'Upload packages in playground repositories.',
-            name: 'PLAYGROUND'
+                description: 'Upload packages in playground repositories.',
+                name: 'PLAYGROUND'
     }
 
     tools {
@@ -63,8 +63,8 @@ pipeline {
                     sh """
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
+                        cp target/libnative.so package/libnative.so
                     """
-                    stash includes: 'target/libnative.so, PKGBUILD', name: 'staging'
                 }
             }
         }
@@ -104,19 +104,18 @@ pipeline {
             steps {
                 echo 'Building deb/rpm packages'
                 buildStage([
-                    skipStash: true,
-                    buildDirs: ['.'],
+                        buildFlags: '-s',
                 ])
             }
         }
 
         stage('Upload artifacts')
-        {
-            steps {
-                uploadStage(
-                    packages: ['carbonio-common-appserver-native-lib']
-                )
-            }
-        }
+                {
+                    steps {
+                        uploadStage(
+                                packages: yapHelper.getPackageNames('yap.json')
+                        )
+                    }
+                }
     }
 }
