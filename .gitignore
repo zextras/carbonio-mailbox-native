@@ -10,3 +10,4 @@ build/
 bin/
 .DS_Store
 target
+/.flattened-pom.xml
