@@ -64,7 +64,7 @@ pipeline {
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
                     """
-                    stash includes: 'target PKGBUILD', name: 'staging'
+                    stash includes: 'target/libnative.so, PKGBUILD', name: 'staging'
                 }
             }
         }
@@ -106,14 +106,6 @@ pipeline {
                 buildStage([
                     skipStash: true,
                     buildDirs: ['.'],
-                    overrides: [
-                        ubuntu: [
-                            preBuildScript: '''
-                                apt-get update
-                                apt-get install -y --no-install-recommends rsync
-                            '''
-                        ]
-                    ]
                 ])
             }
         }
