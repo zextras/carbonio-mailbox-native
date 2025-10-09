@@ -1,18 +1,17 @@
 library(
-    identifier: 'jenkins-packages-build-library@1.0.4',
-    retriever: modernSCM([
-        $class: 'GitSCMSource',
-        remote: 'git@github.com:zextras/jenkins-packages-build-library.git',
-        credentialsId: 'jenkins-integration-with-github-account'
-    ])
+        identifier: 'jenkins-packages-build-library@1.0.4',
+        retriever: modernSCM([
+                $class       : 'GitSCMSource',
+                remote       : 'git@github.com:zextras/jenkins-packages-build-library.git',
+                credentialsId: 'jenkins-integration-with-github-account'
+        ])
 )
 
 boolean isBuildingTag() {
     return env.TAG_NAME ? true : false
 }
 
-String profile = isBuildingTag() ? '-Pprod' :
-    (env.BRANCH_NAME == 'devel' ? '-Pdev' : '')
+String profile = isBuildingTag() ? '-Pprod' : ''
 
 pipeline {
     agent {
@@ -22,11 +21,10 @@ pipeline {
     }
 
     environment {
-        MVN_OPTS = "-Ddebug=0 -Dis-production=1 ${profile}"
+        MVN_OPTS = "-Ddebug=0 ${profile}"
         GITHUB_BOT_PR_CREDS = credentials('jenkins-integration-with-github-account')
         JAVA_OPTS = '-Dfile.encoding=UTF8'
         LC_ALL = 'C.UTF-8'
-        MAVEN_OPTS = '-Xmx4g'
     }
 
     options {
@@ -37,14 +35,8 @@ pipeline {
 
     parameters {
         booleanParam defaultValue: false,
-            description: 'Upload packages in playground repositories.',
-            name: 'PLAYGROUND'
-        booleanParam defaultValue: false,
-            description: 'Skip test and sonar analysis.',
-            name: 'SKIP_TEST_WITH_COVERAGE'
-        booleanParam defaultValue: false,
-            description: 'Skip sonar analysis.',
-            name: 'SKIP_SONARQUBE'
+                description: 'Upload packages in playground repositories.',
+                name: 'PLAYGROUND'
     }
 
     tools {
@@ -71,26 +63,20 @@ pipeline {
                     sh """
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
+                        cp target/libnative.so package/libnative.so
                     """
                 }
             }
         }
 
         stage('Sonarqube Analysis') {
-            when {
-                allOf {
-                    expression { params.SKIP_SONARQUBE == false }
-                    expression { params.SKIP_TEST_WITH_COVERAGE == false }
-                }
-            }
             steps {
                 container('jdk-17') {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
                         sh """
                             mvn ${MVN_OPTS} -DskipTests \
                                 sonar:sonar \
-                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports \
-                                -Dsonar.exclusions=**/com/zimbra/soap/mail/type/*.java,**/com/zimbra/soap/mail/message/*.java,**/com/zimbra/cs/account/ZAttr*.java,**/com/zimbra/common/account/ZAttr*.java
+                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
                         """
                     }
                 }
@@ -118,27 +104,18 @@ pipeline {
             steps {
                 echo 'Building deb/rpm packages'
                 buildStage([
-                    skipStash: true,
-                    buildDirs: ['.'],
-                    overrides: [
-                        ubuntu: [
-                            preBuildScript: '''
-                                apt-get update
-                                apt-get install -y --no-install-recommends rsync
-                            '''
-                        ]
-                    ]
+                        buildFlags: '-s',
                 ])
             }
         }
 
         stage('Upload artifacts')
-        {
-            steps {
-                uploadStage(
-                    packages: ['carbonio-common-appserver-native-lib']
-                )
-            }
-        }
+                {
+                    steps {
+                        uploadStage(
+                                packages: yapHelper.getPackageNames('yap.json')
+                        )
+                    }
+                }
     }
 }

@@ -1,0 +1,11 @@
+{
+  "buildDir": "/tmp",
+  "description": "Carbonio mailbox native",
+  "name": "carbonio-mailbox-native",
+  "output": "artifacts",
+  "projects": [
+    {
+      "name": "package"
+    }
+  ]
+}
