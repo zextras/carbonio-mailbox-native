@@ -11,8 +11,7 @@ boolean isBuildingTag() {
     return env.TAG_NAME ? true : false
 }
 
-String profile = isBuildingTag() ? '-Pprod' :
-    (env.BRANCH_NAME == 'devel' ? '-Pdev' : '')
+String profile = isBuildingTag() ? '-Pprod' : ''
 
 pipeline {
     agent {
@@ -22,11 +21,10 @@ pipeline {
     }
 
     environment {
-        MVN_OPTS = "-Ddebug=0 -Dis-production=1 ${profile}"
+        MVN_OPTS = "-Ddebug=0 ${profile}"
         GITHUB_BOT_PR_CREDS = credentials('jenkins-integration-with-github-account')
         JAVA_OPTS = '-Dfile.encoding=UTF8'
         LC_ALL = 'C.UTF-8'
-        MAVEN_OPTS = '-Xmx4g'
     }
 
     options {
