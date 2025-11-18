@@ -60,11 +60,13 @@ pipeline {
         stage('Build') {
             steps {
                 container('jdk-17') {
-                    sh """
-                        apt update && apt install -y build-essential
-                        mvn ${MVN_OPTS} clean install
-                        cp target/libnative.so package/libnative.so
-                    """
+                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
+                        sh """
+                            apt update && apt install -y build-essential
+                            mvn ${MVN_OPTS} -S ${SETTINGS_PATH} clean install
+                            cp target/libnative.so package/libnative.so
+                        """
+                    }
                 }
             }
         }
@@ -73,11 +75,13 @@ pipeline {
             steps {
                 container('jdk-17') {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
-                        sh """
-                            mvn ${MVN_OPTS} -DskipTests \
-                                sonar:sonar \
-                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
-                        """
+                        withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
+                            sh """
+                                mvn ${MVN_OPTS} -DskipTests -S ${SETTINGS_PATH} \
+                                    sonar:sonar \
+                                    -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
+                            """
+                        }
                     }
                 }
             }
@@ -92,9 +96,7 @@ pipeline {
             steps {
                 container('jdk-17') {
                     withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        script {
-                            sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -DskipTests=true"
-                        }
+                        sh "mvn ${MVN_OPTS} -S ${SETTINGS_PATH} deploy -DskipTests=true"
                     }
                 }
             }
