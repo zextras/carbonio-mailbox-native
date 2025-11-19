@@ -60,11 +60,11 @@ pipeline {
         stage('Build') {
             steps {
                 container('jdk-17') {
-                    sh """
+                    sh '''
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
                         cp target/libnative.so package/libnative.so
-                    """
+                    '''
                 }
             }
         }
