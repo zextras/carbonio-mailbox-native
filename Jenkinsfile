@@ -28,13 +28,13 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '25'))
+        buildDiscarder(logRotator(
+            numToKeepStr: '10',
+            daysToKeepStr: '30',
+            artifactNumToKeepStr: '5'
+        ))
         skipDefaultCheckout()
         timeout(time: 2, unit: 'HOURS')
-    }
-
-    tools {
-        jfrog 'jfrog-cli'
     }
 
     triggers {
@@ -42,11 +42,12 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Setup') {
             steps {
                 checkout scm
                 script {
                     gitMetadata()
+                    properties(defaultPipelineProperties())
                 }
             }
         }
@@ -86,9 +87,7 @@ pipeline {
             steps {
                 container('jdk-17') {
                     withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        script {
-                            sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -DskipTests=true"
-                        }
+                        sh "mvn ${MVN_OPTS} -s \$SETTINGS_PATH deploy -DskipTests=true"
                     }
                 }
             }
@@ -103,13 +102,18 @@ pipeline {
             }
         }
 
-        stage('Upload artifacts')
-                {
-                    steps {
-                        uploadStage(
-                                packages: yapHelper.getPackageNames('yap.json')
-                        )
-                    }
-                }
+        stage('Upload artifacts') {
+            when {
+                expression { return uploadStage.shouldUpload() }
+            }
+            tools {
+                jfrog 'jfrog-cli'
+            }
+            steps {
+                uploadStage(
+                        packages: yapHelper.resolvePackageNames()
+                )
+            }
+        }
     }
 }
