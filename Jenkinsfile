@@ -51,7 +51,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     sh """
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
@@ -63,7 +63,7 @@ pipeline {
 
         stage('Sonarqube Analysis') {
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
                         sh """
                             mvn ${MVN_OPTS} -DskipTests \
@@ -82,7 +82,7 @@ pipeline {
                 }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
                         script {
                             sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -DskipTests=true"
