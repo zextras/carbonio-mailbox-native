@@ -51,7 +51,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     sh """
                         apt update && apt install -y build-essential
                         mvn ${MVN_OPTS} clean install
@@ -63,11 +63,11 @@ pipeline {
 
         stage('Sonarqube Analysis') {
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
                         sh """
                             mvn ${MVN_OPTS} -DskipTests \
-                                sonar:sonar \
+                                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                 -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
                         """
                     }
@@ -75,17 +75,30 @@ pipeline {
             }
         }
 
-        stage('Publish to maven') {
+        stage('Publish SNAPSHOT to maven') {
             when {
-                expression {
-                    return isBuildingTag() || env.BRANCH_NAME == 'devel'
-                }
+                not { buildingTag() }
             }
             steps {
-                container('jdk-17') {
+                container('jdk-21') {
                     withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
                         script {
                             sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -DskipTests=true"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Publish to maven') {
+            when {
+                buildingTag()
+            }
+            steps {
+                container('jdk-21') {
+                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
+                        script {
+                            sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -Dchangelist= -DskipTests=true"
                         }
                     }
                 }
