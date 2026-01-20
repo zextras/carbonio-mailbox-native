@@ -67,7 +67,7 @@ pipeline {
                     withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
                         sh """
                             mvn ${MVN_OPTS} -DskipTests \
-                                sonar:sonar \
+                                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                 -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
                         """
                     }
