@@ -8,8 +8,7 @@
   <packaging>jar</packaging>
   <groupId>com.zextras</groupId>
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- https://maven.apache.org/maven-ci-friendly.html -->
     <revision>4.23.1</revision>
