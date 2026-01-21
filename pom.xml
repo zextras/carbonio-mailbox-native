@@ -13,6 +13,7 @@
     <!-- https://maven.apache.org/maven-ci-friendly.html -->
     <revision>4.24.0</revision>
     <changelist>-SNAPSHOT</changelist>
+    <sonar.version>5.5.0.6356</sonar.version>
   </properties>
   <version>${revision}${changelist}</version>
 
@@ -36,6 +37,15 @@
     </profile>
   </profiles>
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${sonar.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
