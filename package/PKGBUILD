@@ -18,13 +18,64 @@ depends__apt=(
 depends__yum=(
   "glibc"
 )
-source=("libnative.so")
-sha256sums=("SKIP")
+makedepends=(
+  "carbonio-openjdk"
+)
+source=(
+  "IO.c"
+  "zjniutil.c"
+  "zjniutil.h"
+  "com_zimbra_znative_IO.h"
+)
+sha256sums=(
+  "SKIP"
+  "SKIP"
+  "SKIP"
+  "SKIP"
+)
 section="mail"
 priority="optional"
 
 package() {
   cd "${srcdir}"
-  install -D "libnative.so" \
+
+  # IMPORTANT: libnative.so must be built from source in this package()
+  #
+  # DO NOT copy pre-built library from Maven target/ or CI agent.
+  # Each distro has different glibc versions:
+  #   Ubuntu 22/24: glibc 2.35/2.39
+  #   Rocky 8/9:    glibc 2.28/2.34
+  #
+  # Pre-built libraries cause glibc symbol version mismatches
+  # (e.g. "GLIBC_2.34 not found") and runtime linking failures.
+  # Compiling here ensures correct dynamic linking for the target
+  # distribution.
+
+  mkdir -p target
+
+  # Copy JNI header to target directory
+  cp com_zimbra_znative_IO.h target/
+
+  # Compile object files
+  gcc -fPIC -g \
+    -I/opt/zextras/common/lib/jvm/java/include \
+    -I/opt/zextras/common/lib/jvm/java/include/linux \
+    -Itarget \
+    -Wall -Wmissing-prototypes \
+    -c -o target/zjniutil.o zjniutil.c
+
+  gcc -fPIC -g \
+    -I/opt/zextras/common/lib/jvm/java/include \
+    -I/opt/zextras/common/lib/jvm/java/include/linux \
+    -Itarget \
+    -Wall -Wmissing-prototypes \
+    -c -o target/IO.o IO.c
+
+  # Link shared library
+  gcc -fPIC -g -shared \
+    -o target/libnative.so \
+    target/IO.o target/zjniutil.o
+
+  install -D "target/libnative.so" \
     "${pkgdir}/opt/zextras/lib/libnative.so"
 }
