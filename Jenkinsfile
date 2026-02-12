@@ -1,5 +1,5 @@
 library(
-        identifier: 'jenkins-lib-common@1.1.2',
+        identifier: 'jenkins-lib-common@feat/add-maven',
         retriever: modernSCM([
                 $class: 'GitSCMSource',
                 credentialsId: 'jenkins-integration-with-github-account',
@@ -9,12 +9,6 @@ library(
 
 properties(defaultPipelineProperties())
 
-boolean isBuildingTag() {
-    return env.TAG_NAME ? true : false
-}
-
-String profile = isBuildingTag() ? '-Pprod' : ''
-
 pipeline {
     agent {
         node {
@@ -23,7 +17,6 @@ pipeline {
     }
 
     environment {
-        MVN_OPTS = "-Ddebug=0 ${profile}"
         GITHUB_BOT_PR_CREDS = credentials('jenkins-integration-with-github-account')
         JAVA_OPTS = '-Dfile.encoding=UTF8'
         LC_ALL = 'C.UTF-8'
@@ -49,60 +42,17 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Maven') {
             steps {
-                container('jdk-21') {
-                    sh """
-                        apt update && apt install -y build-essential
-                        mvn ${MVN_OPTS} clean install
-                        cp src/main/native/*.c package/
-                        cp src/main/native/*.h package/
-                        cp target/*.h package/
-                    """
-                }
-            }
-        }
-
-        stage('Sonarqube Analysis') {
-            steps {
-                container('jdk-21') {
-                    withSonarQubeEnv(credentialsId: 'sonarqube-user-token', installationName: 'SonarQube instance') {
-                        sh """
-                            mvn ${MVN_OPTS} -DskipTests \
-                                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-                                -Dsonar.junit.reportPaths=target/surefire-reports,target/failsafe-reports
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Publish SNAPSHOT to maven') {
-            when {
-                not { buildingTag() }
-            }
-            steps {
-                container('jdk-21') {
-                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        script {
-                            sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -DskipTests=true"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Publish to maven') {
-            when {
-                buildingTag()
-            }
-            steps {
-                container('jdk-21') {
-                    withCredentials([file(credentialsId: 'jenkins-maven-settings.xml', variable: 'SETTINGS_PATH')]) {
-                        script {
-                            sh "mvn ${MVN_OPTS} -s " + SETTINGS_PATH + " deploy -Dchangelist= -DskipTests=true"
-                        }
-                    }
+                script {
+                    mavenStage(
+                            buildGoals: 'clean install',
+                            skipTests: true,
+                            skipCoverage: true,
+                            preBuildScript: 'apt update && apt install -y build-essential',
+                            postBuildScript: 'cp src/main/native/*.c src/main/native/*.h target/*.h package/',
+                            mvnOpts: ['Ddebug': '0']
+                    )
                 }
             }
         }
