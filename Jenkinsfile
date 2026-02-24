@@ -194,12 +194,6 @@ pipeline {
         }
 
         stage('Bump version') {
-            when {
-                allOf {
-                    branch 'main'
-                    expression { !isCommitTagged() }
-                }
-            }
             steps {
                 script {
                     semanticRelease()
