@@ -193,6 +193,12 @@ pipeline {
             }
         }
 
-        semanticRelease()
+        stage('Bump version') {
+            steps {
+                script {
+                    semanticRelease()
+                }
+            }
+        }
     }
 }
