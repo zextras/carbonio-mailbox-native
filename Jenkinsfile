@@ -1,5 +1,5 @@
 library(
-        identifier: 'jenkins-lib-common@ci-semantic-release',
+        identifier: 'jenkins-lib-common@1.3.3',
         retriever: modernSCM([
                 $class: 'GitSCMSource',
                 credentialsId: 'jenkins-integration-with-github-account',
@@ -192,7 +192,7 @@ pipeline {
         stage('Bump version') {
             steps {
                 script {
-                    semanticRelease()
+                    dt2_semanticRelease()
                 }
             }
         }
